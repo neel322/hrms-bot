@@ -1,0 +1,38 @@
+# Environment variables
+.env
+.env.*
+.env*.local
+!.env.example
+
+# Python virtual environment & cache
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Databases & local storage
+hrms.db
+*.db
+*.sqlite
+*.sqlite3
+qdrant_data/
+models/
+
+# Node modules & logs
+node_modules/
+*/node_modules/
+*.log
+npm-debug.log*
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

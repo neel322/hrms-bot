@@ -1,0 +1,17 @@
+fastapi==0.115.11
+uvicorn==0.34.0
+pydantic==2.10.6
+pydantic-settings==2.8.1
+qdrant-client==1.13.3
+fastembed==0.5.1
+pypdf==5.3.1
+python-multipart==0.0.20
+python-dotenv==1.0.1
+requests==2.32.3
+groq==1.7.0
+sqlalchemy==2.0.38
+psycopg2-binary==2.9.13
+bcrypt==5.0.0
+pyjwt==2.15.1
+pytest==9.1.1
+email-validator==2.3.0
