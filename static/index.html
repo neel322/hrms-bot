@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Acme HRMS Assistant</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Markdown parser & DOMPurify sanitizer (Self-hosted in static/vendor/ for offline support) -->
+  <script src="/static/vendor/marked.min.js"></script>
+  <script src="/static/vendor/purify.min.js"></script>
+  <script>
+    if (typeof marked === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script>');
+    }
+    if (typeof DOMPurify === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body data-theme="light">
+  <div class="app-container">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <div class="brand-title">Acme <span>HRMS Bot</span></div>
+          <div class="brand-sub">Secure Memory RAG Assistant</div>
+        </div>
+      </div>
+
+      <div class="user-badge" id="userBadge">
+        <span class="user-name" id="badgeName">Priya Sharma</span>
+        <span class="user-role role-employee" id="badgeRole">employee</span>
+        <span class="user-dept" id="badgeDept">Engineering</span>
+      </div>
+
+      <div class="topbar-right">
+        <div class="session-box">
+          <span class="session-label">Session:</span>
+          <code id="sessionIdDisplay">s_loading</code>
+          <button id="btnNewChat" class="btn-sm btn-outline" title="Start new conversation session">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            <span>New</span>
+          </button>
+          <button id="btnOpenHistory" class="btn-sm btn-outline" title="View conversation history">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            <span>History</span>
+          </button>
+        </div>
+
+        <button id="btnToggleInspector" class="btn-sm btn-outline btn-inspector-toggle" title="Toggle Live Inspector">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+          <span class="toggle-text">Inspector</span>
+        </button>
+
+        <button id="btnDrawerAudit" class="btn-icon" title="View Audit Logs (Access Denials)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span class="badge-dot hidden" id="auditDot"></span>
+        </button>
+
+        <button id="btnThemeToggle" class="btn-icon" title="Toggle Light / Dark Mode">
+          <span id="themeIcon">🌙</span>
+        </button>
+
+        <button id="btnLogout" class="btn-sm btn-outline btn-logout" title="Sign out of HRMS">
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-workspace">
+      <!-- Left: Chat Panel -->
+      <section class="chat-section">
+        <div class="chat-header">
+          <div class="chat-header-title">
+            <span class="live-dot"></span>
+            <h3>Conversation</h3>
+          </div>
+          <div class="chat-header-actions">
+            <button id="btnClearScreen" class="btn-text">Clear Screen</button>
+          </div>
+        </div>
+
+        <!-- Chat Stream -->
+        <div class="chat-stream" id="chatStream">
+          <div class="chat-message assistant-msg welcome-card">
+            <div class="avatar assistant-avatar">🤖</div>
+            <div class="msg-content">
+              <h4>Welcome to Acme Technologies HRMS Assistant</h4>
+              <p>I can help you check your leave balance, file time-off queries, inspect attendance, view payslips, and review company policies.</p>
+              <div class="welcome-features">
+                <span>🔒 Role-scoped data access</span>
+                <span>📚 9 Verified HR policies indexed</span>
+                <span>🧠 Long-term preference memory</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div class="typing-bar hidden" id="typingBar">
+          <div class="typing-bubble">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          </div>
+          <span class="typing-text" id="typingStatus">Assistant is searching policies and data...</span>
+        </div>
+
+        <!-- Role-Aware Suggested Chips -->
+        <div class="chips-container" id="suggestedChips">
+          <span class="chips-tag">Suggested:</span>
+          <div class="chips-list" id="chipsList">
+            <!-- Injected per persona -->
+          </div>
+        </div>
+
+        <!-- Friendly New Chat Suggestion Banner -->
+        <div class="new-chat-suggestion hidden" id="newChatSuggestion" role="status" aria-live="polite">
+          <div class="ncs-content">
+            <div class="ncs-header">
+              <span class="ncs-icon" aria-hidden="true">💡</span>
+              <span class="ncs-title">Starting a fresh chat can help</span>
+            </div>
+            <p class="ncs-text" id="ncsText">This chat has 4 questions. For a new topic, a new chat gives faster, more focused answers.</p>
+          </div>
+          <div class="ncs-actions">
+            <button type="button" class="btn-sm btn-primary btn-ncs-start" id="btnNcsStart">Start new chat</button>
+            <button type="button" class="btn-sm btn-outline btn-ncs-keep" id="btnNcsKeep">Keep chatting</button>
+            <button type="button" class="btn-icon btn-ncs-close" id="btnNcsClose" aria-label="Dismiss suggestion" title="Dismiss suggestion">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat Input Form -->
+        <form class="chat-input-form" id="chatForm">
+          <div class="input-wrap">
+            <textarea id="chatInput" placeholder="Ask about leaves, policies, payslip, attendance..." rows="1" required></textarea>
+            <button type="submit" id="btnSend" class="btn-send" title="Send message (Enter)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+          </div>
+          <div class="input-hints">
+            <span>Press <strong>Enter</strong> to send, <strong>Shift + Enter</strong> for newline</span>
+          </div>
+        </form>
+      </section>
+
+      <!-- Mobile Backdrop Overlay for Inspector -->
+      <div class="inspector-backdrop" id="inspectorBackdrop"></div>
+
+      <!-- Right: Live Inspector & Drawers -->
+      <aside class="inspector-section">
+        <div class="inspector-tabs">
+          <button class="tab-btn active" data-tab="tabLiveInspector">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            Live Inspector
+          </button>
+          <button class="tab-btn" data-tab="tabHistory" id="tabBtnHistory">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            History
+          </button>
+          <button class="tab-btn" data-tab="tabPolicies">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            Policies
+          </button>
+          <button class="tab-btn" data-tab="tabMemories">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+            Memories
+          </button>
+          <div class="more-tabs-container hidden" id="moreTabsContainer">
+            <button type="button" class="tab-btn btn-more-tabs" id="btnMoreTabs" aria-label="More: access audit, onboarding, admin log" title="More" aria-haspopup="menu" aria-expanded="false">
+              <span class="more-dots-icon">⋮</span>
+              <span class="badge-dot hidden" id="moreAuditDot"></span>
+            </button>
+            <div class="more-tabs-menu hidden" id="moreTabsMenu" role="menu" aria-label="More admin options">
+              <button type="button" class="more-menu-item" id="menuItemAudit" role="menuitem" data-tab="tabAudit" tabindex="-1">
+                <span class="menu-item-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </span>
+                <div class="menu-item-text">
+                  <div class="menu-item-title-row">
+                    <span class="menu-item-title">Access Audit</span>
+                    <span class="menu-count-badge hidden" id="auditCountBadge">0</span>
+                  </div>
+                  <span class="menu-item-desc">Access-denied attempts</span>
+                </div>
+              </button>
+              <button type="button" class="more-menu-item" id="menuItemOnboarding" role="menuitem" data-tab="tabOnboarding" tabindex="-1">
+                <span class="menu-item-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                </span>
+                <div class="menu-item-text">
+                  <span class="menu-item-title">Onboarding</span>
+                  <span class="menu-item-desc">New-joiner provisioning & invites</span>
+                </div>
+              </button>
+              <button type="button" class="more-menu-item" id="menuItemAdminAudit" role="menuitem" data-tab="tabAdminAudit" tabindex="-1">
+                <span class="menu-item-icon">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                </span>
+                <div class="menu-item-text">
+                  <span class="menu-item-title">Admin Audit Log</span>
+                  <span class="menu-item-desc">Admin operations trail</span>
+                </div>
+              </button>
+            </div>
+          </div>
+          <button id="btnCloseInspector" class="btn-icon btn-close-inspector" title="Close Panel">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div class="tab-content">
+          <!-- Tab: History -->
+          <div class="tab-pane" id="tabHistory">
+            <div class="tab-pane-header">
+              <div class="header-split">
+                <div>
+                  <h4>Conversation History</h4>
+                  <p>Restore your recent chat sessions</p>
+                </div>
+                <button id="btnRefreshHistory" class="btn-text">Refresh</button>
+              </div>
+            </div>
+            <div class="history-list" id="historyList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+          <!-- Tab 1: Live Inspector -->
+          <div class="tab-pane active" id="tabLiveInspector">
+            <!-- Context Metrics -->
+            <div class="inspector-card">
+              <div class="card-title">Turn Context & State</div>
+              <div class="metrics-grid">
+                <div class="metric-item">
+                  <span class="m-number" id="mCallerRole">employee</span>
+                  <span class="m-label">Active Role</span>
+                </div>
+                <div class="metric-item" id="mHistoryMetricItem" title="Earlier messages (your questions and the assistant's replies) sent with this query. The query itself is not counted.">
+                  <span class="m-number" id="mHistoryCount">0</span>
+                  <span class="m-subtext" id="mHistorySubtext"></span>
+                  <span class="m-label" title="Earlier messages (your questions and the assistant's replies) sent with this query. The query itself is not counted.">History sent</span>
+                </div>
+                <div class="metric-item">
+                  <span class="m-number" id="mToolCount">0</span>
+                  <span class="m-label">Tools Executed</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Latency Breakdown Card -->
+            <div class="inspector-card" id="latencyCard">
+              <div class="card-title text-warning">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>Latency Breakdown</span>
+                <span id="timingTotalBadge" class="timing-total-badge">-- ms</span>
+              </div>
+              <div class="latency-bars" id="latencyBars">
+                <div class="empty-state">No timing data for this turn yet.</div>
+              </div>
+            </div>
+
+            <!-- Access Denied Card (Red Alert) -->
+            <div class="inspector-card alert-card hidden" id="accessDeniedCard">
+              <div class="card-title text-danger">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                Access Control Denial
+              </div>
+              <div class="alert-body" id="accessDeniedContent">
+                <!-- Injected -->
+              </div>
+            </div>
+
+            <!-- Newly Saved Memory (Highlight) -->
+            <div class="inspector-card memory-saved-card hidden" id="memorySavedCard">
+              <div class="card-title text-success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                Durable Preference Saved
+              </div>
+              <div class="memory-saved-body" id="memorySavedContent"></div>
+            </div>
+
+            <!-- Tool Calls -->
+            <div class="inspector-card">
+              <div class="card-title text-accent">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                Tool Calls Executed
+              </div>
+              <div class="tool-calls-list" id="toolCallsList">
+                <div class="empty-state">No tool calls made in this turn.</div>
+              </div>
+            </div>
+
+            <!-- Policy Chunks Retrieved -->
+            <div class="inspector-card">
+              <div class="card-title text-info">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                Policy Chunks Retrieved
+              </div>
+              <div class="chunks-list" id="chunksList">
+                <div class="empty-state">No policy chunks retrieved in this turn.</div>
+              </div>
+            </div>
+
+            <!-- HR Data Tool Result -->
+            <div class="inspector-card">
+              <div class="card-title text-primary">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                HR Data Results
+              </div>
+              <div class="hr-data-list" id="hrDataList">
+                <div class="empty-state">No HR database records queried in this turn.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Policies -->
+          <div class="tab-pane" id="tabPolicies">
+            <div class="tab-pane-header">
+              <h4>HR Policy Ingestion</h4>
+              <p>Upload PDF, Markdown, or TXT documents into the <code>hr_policies</code> vectorstore.</p>
+            </div>
+
+            <div id="policyUploadSection">
+              <div class="upload-dropzone" id="dropZone">
+                <div class="drop-icon">📑</div>
+                <div class="drop-text">Drag & drop files or <span class="browse-link">browse</span></div>
+                <input type="file" id="policyFileInput" accept=".pdf,.md,.txt" class="hidden">
+                <div class="drop-hint">PDF, MD, or TXT (chunk size: ~500 chars)</div>
+              </div>
+
+              <div class="policy-upload-options" id="policyUploadOptions" style="margin: 8px 0;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; cursor: pointer; color: var(--text-muted);">
+                  <input type="checkbox" id="chkReplacePolicy">
+                  <span>Replace if it already exists</span>
+                </label>
+              </div>
+
+              <div class="upload-progress-box hidden" id="uploadProgress">
+                <div class="progress-spinner"></div>
+                <span id="uploadStatusText">Ingesting document...</span>
+              </div>
+            </div>
+
+            <div class="section-subheading">
+              <span>Indexed Policy Documents</span>
+              <button id="btnRefreshFiles" class="btn-text">Refresh</button>
+            </div>
+            <div class="policy-files-list" id="policyFilesList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Tab 3: Memories -->
+          <div class="tab-pane" id="tabMemories">
+            <div class="tab-pane-header">
+              <div class="header-split">
+                <div>
+                  <h4>Durable Preferences</h4>
+                  <p>Memories stored in <code>user_memories</code> for <span id="memoryUserName" class="text-bold">Priya Sharma</span></p>
+                </div>
+                <button id="btnResetMemories" class="btn-sm btn-danger" title="Clear all memories for active user">Reset</button>
+              </div>
+            </div>
+
+            <div class="user-memories-list" id="userMemoriesList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Tab 4: Audit Log -->
+          <div class="tab-pane" id="tabAudit">
+            <div class="tab-pane-header">
+              <div class="header-split">
+                <div>
+                  <h4>Access Control Audit Log</h4>
+                  <p>Real-time log of security access denials enforced in backend code.</p>
+                </div>
+                <button id="btnRefreshAudit" class="btn-text">Refresh</button>
+              </div>
+            </div>
+
+            <div class="audit-log-list" id="auditLogList">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Tab 5: HR Onboarding (hr_admin only) -->
+          <div class="tab-pane" id="tabOnboarding">
+            <div class="tab-pane-header">
+              <div class="header-split">
+                <div>
+                  <h4>New-Joiner Onboarding</h4>
+                  <p>Provision employees, generate activation invites, and track onboarding status.</p>
+                </div>
+                <button id="btnRefreshOnboarding" class="btn-text">Refresh</button>
+              </div>
+            </div>
+
+            <!-- Add Employee Form -->
+            <div class="inspector-card">
+              <div class="card-title text-accent">Add New Employee</div>
+              <form id="addEmployeeForm" class="onboarding-form">
+                <div class="form-grid-2">
+                  <div class="form-group-sm">
+                    <label for="empNewName">Full Name *</label>
+                    <input type="text" id="empNewName" placeholder="e.g. Rohit Kumar" required>
+                  </div>
+                  <div class="form-group-sm">
+                    <label for="empNewEmail">Work Email *</label>
+                    <input type="email" id="empNewEmail" placeholder="rohit.kumar@acmetech.com" required>
+                  </div>
+                  <div class="form-group-sm">
+                    <label for="empNewDept">Department *</label>
+                    <select id="empNewDept" required>
+                      <option value="Engineering">Engineering</option>
+                      <option value="Product">Product</option>
+                      <option value="Design">Design</option>
+                      <option value="Human Resources">Human Resources</option>
+                      <option value="Sales">Sales</option>
+                      <option value="Marketing">Marketing</option>
+                    </select>
+                  </div>
+                  <div class="form-group-sm">
+                    <label for="empNewDesignation">Designation *</label>
+                    <input type="text" id="empNewDesignation" placeholder="e.g. Software Engineer" required>
+                  </div>
+                  <div class="form-group-sm">
+                    <label for="empNewJoinDate">Join Date *</label>
+                    <input type="date" id="empNewJoinDate" required>
+                  </div>
+                  <div class="form-group-sm">
+                    <label for="empNewLocation">Work Location *</label>
+                    <select id="empNewLocation" required>
+                      <option value="Headquarters - Bangalore">Headquarters - Bangalore</option>
+                      <option value="Regional Office - Mumbai">Regional Office - Mumbai</option>
+                      <option value="Regional Office - Delhi">Regional Office - Delhi</option>
+                      <option value="Remote - India">Remote - India</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" id="btnAddEmpSubmit" class="btn-sm btn-primary mt-2">Create & Provision</button>
+              </form>
+            </div>
+
+            <!-- Onboarding Employees Table -->
+            <div class="section-subheading">
+              <span>Employees In Onboarding</span>
+            </div>
+            <div class="onboarding-table-wrap">
+              <table class="onboarding-table" id="onboardingTable">
+                <thead>
+                  <tr>
+                    <th>Emp Code</th>
+                    <th>Name</th>
+                    <th>Dept</th>
+                    <th>Join Date</th>
+                    <th>Invite State</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="onboardingTableBody">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Last Generated Invite Box -->
+            <div class="inspector-card invite-result-card hidden" id="inviteResultCard">
+              <div class="card-title text-success">Generated Activation Link</div>
+              <p class="invite-instruction">Share this single-use link with the employee to activate their account:</p>
+              <div class="invite-link-row">
+                <input type="text" id="inviteLinkInput" readonly class="invite-link-input">
+                <button id="btnCopyInvite" class="btn-sm btn-outline">Copy</button>
+                <button id="btnOpenActivate" class="btn-sm btn-primary">Open Link</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Admin Audit (HR Admin only) -->
+          <div class="tab-pane" id="tabAdminAudit">
+            <div class="tab-pane-header">
+              <div class="header-split">
+                <div>
+                  <h4>HR Administrative Audit Trail</h4>
+                  <p>Tracks employee creations, profile modifications, offboarding, reactivations, invites, and policy updates</p>
+                </div>
+                <button class="btn-sm btn-outline" id="btnRefreshAdminAudit">Refresh</button>
+              </div>
+            </div>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Action</th>
+                    <th>Actor</th>
+                    <th>Target</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody id="adminAuditTableBody">
+                  <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:14px;">Loading administrative audit logs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Dedicated Login Modal -->
+  <div id="loginModal" class="login-modal-overlay hidden">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <h2>Acme HRMS Login</h2>
+        <p>Sign in with your enterprise credentials</p>
+      </div>
+      <form id="loginForm" class="login-form">
+        <div id="loginAlert" class="login-alert hidden"></div>
+        <div class="form-group">
+          <label for="loginEmail">Work Email</label>
+          <input type="email" id="loginEmail" placeholder="e.g. priya.sharma@acmetech.com" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="btnLoginSubmit" class="btn-block">Sign In</button>
+        <div class="login-footer">
+          <p class="login-note">Forgot password? Contact HR at <a href="mailto:hr-support@acmetech.com">hr-support@acmetech.com</a></p>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dedicated Account Activation Modal (/activate?token=...) -->
+  <div id="activateModal" class="login-modal-overlay hidden">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <h2>Activate Your Account</h2>
+        <p>Welcome to Acme Technologies! Set your password to begin.</p>
+      </div>
+      <form id="activateForm" class="login-form">
+        <div id="activateAlert" class="login-alert hidden"></div>
+        <div class="form-group">
+          <label for="activateToken">Activation Token</label>
+          <input type="text" id="activateToken" placeholder="Paste activation token here" required>
+        </div>
+        <div class="form-group">
+          <label for="activatePassword">Create Password</label>
+          <input type="password" id="activatePassword" placeholder="Minimum 10 characters" required autocomplete="new-password">
+          <div class="password-strength-hint">
+            <span id="strengthText">Password must be at least 10 characters and cannot be your name or email.</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="activateConfirmPassword">Confirm Password</label>
+          <input type="password" id="activateConfirmPassword" placeholder="Re-enter password" required autocomplete="new-password">
+        </div>
+        <button type="submit" id="btnActivateSubmit" class="btn-block">Activate & Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mandatory Password Change Modal -->
+  <div id="changePasswordModal" class="login-modal-overlay hidden">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h2>Password Change Required</h2>
+        <p>You must change your password before continuing.</p>
+      </div>
+      <form id="changePasswordForm" class="login-form">
+        <div id="changePasswordAlert" class="login-alert hidden"></div>
+        <div class="form-group">
+          <label for="currentPassword">Current Password</label>
+          <input type="password" id="currentPassword" placeholder="Enter current password" required autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label for="newPassword">New Password</label>
+          <input type="password" id="newPassword" placeholder="Minimum 10 characters (max 72 bytes)" required autocomplete="new-password">
+          <div class="password-strength-hint">
+            <span id="changeStrengthText">Password must be at least 10 characters and cannot contain your full name or email username.</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="confirmNewPassword">Confirm New Password</label>
+          <input type="password" id="confirmNewPassword" placeholder="Re-enter new password" required autocomplete="new-password">
+        </div>
+        <button type="submit" id="btnChangePasswordSubmit" class="btn-block">Update Password</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/static/app.js?v=20261008_1"></script>
+</body>
+</html>
